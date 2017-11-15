@@ -91,7 +91,7 @@ export type OptionsData = {
   /**
    * A boolean to optionally enable GraphiQL mode.
    */
-  graphiql?: ?boolean,
+  graphiql?: ?mixed
 };
 
 /**
@@ -140,6 +140,7 @@ function graphqlHTTP(options: Options): Middleware {
     let extensionsFn;
     let showGraphiQL;
     let query;
+    let graphiql;
 
     let documentAST;
     let variables;
@@ -175,7 +176,7 @@ function graphqlHTTP(options: Options): Middleware {
         const schema = optionsData.schema;
         const context = optionsData.context || request;
         const rootValue = optionsData.rootValue;
-        const graphiql = optionsData.graphiql;
+        graphiql = optionsData.graphiql;
         pretty = optionsData.pretty;
         formatErrorFn = optionsData.formatError;
         extensionsFn = optionsData.extensions;
@@ -311,6 +312,7 @@ function graphqlHTTP(options: Options): Middleware {
             variables,
             operationName,
             result,
+            options: graphiql
           });
           return sendResponse(response, 'text/html', payload);
         }

@@ -8,11 +8,28 @@
  *  of patent rights can be found in the PATENTS file in the same directory.
  */
 
+type Bookmark = {
+  title: string,
+  query: string
+}
+
+type Image = {
+  src: string,
+  width: number,
+  height: number
+}
+
+type GraphiQLOptions = {
+  logo?: ?Image,
+  bookmarks?: ?Array<Bookmark>
+}
+
 type GraphiQLData = {
   query: ?string,
   variables: ?{ [name: string]: mixed },
   operationName: ?string,
   result?: mixed,
+  options?: ?GraphiQLOptions
 };
 
 // Current latest version of GraphiQL.
@@ -39,6 +56,9 @@ export function renderGraphiQL(data: GraphiQLData): string {
     ? JSON.stringify(data.result, null, 2)
     : null;
   const operationName = data.operationName;
+  const options = data.options;
+  const logo = options.logo;
+  const bookmarks = options.bookmarks || [];
 
   /* eslint-disable max-len */
   return `<!--
@@ -149,8 +169,49 @@ add "&raw" to the end of the URL within a browser.
     }
 
     // Render <GraphiQL /> into the body.
+    var graphiql
+    var logo = ${safeSerialize(logo)}
+    var logos = logo && [renderLogo(logo)]
+    var customComponents = (logos || []).concat(
+      React.createElement(GraphiQL.Toolbar, {}, [
+        React.createElement(GraphiQL.ToolbarButton, {
+          onClick: function () {
+            graphiql.handlePrettifyQuery.call(graphiql, arguments)
+          },
+          title: "Prettify Query",
+          label: "Prettify"
+        }),
+        React.createElement(GraphiQL.ToolbarButton, {
+          onClick: function () {
+            graphiql.handleToggleHistory.call(graphiql, arguments)
+          },
+          title: "Show History",
+          label: "History"
+        })
+      ].concat(
+        ${safeSerialize(bookmarks)}.map(renderBookmark)
+      )),
+    )
+
+    function renderBookmark (bookmark) {
+      return React.createElement(GraphiQL.ToolbarButton, {
+        title: bookmark.title,
+        label: bookmark.title,
+        onClick: function () {
+          graphiql.getQueryEditor().setValue(bookmark.query)
+        }
+      })
+    }
+
+    function renderLogo (image) {
+      return React.createElement(GraphiQL.Logo, {}, [
+        React.createElement('img', image)
+      ])
+    }
+
     ReactDOM.render(
       React.createElement(GraphiQL, {
+        ref: g => graphiql = g,
         fetcher: graphQLFetcher,
         onEditQuery: onEditQuery,
         onEditVariables: onEditVariables,
@@ -158,8 +219,8 @@ add "&raw" to the end of the URL within a browser.
         query: ${safeSerialize(queryString)},
         response: ${safeSerialize(resultString)},
         variables: ${safeSerialize(variablesString)},
-        operationName: ${safeSerialize(operationName)},
-      }),
+        operationName: ${safeSerialize(operationName)}
+      }, customComponents),
       document.body
     );
   </script>
