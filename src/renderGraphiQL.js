@@ -171,34 +171,56 @@ add "&raw" to the end of the URL within a browser.
     // Render <GraphiQL /> into the body.
     var graphiql
     var logo = ${safeSerialize(logo)}
-    var logos = logo && [renderLogo(logo)]
-    var customComponents = (logos || []).concat(
-      React.createElement(GraphiQL.Toolbar, {}, [
-        React.createElement(GraphiQL.ToolbarButton, {
-          onClick: function () {
-            graphiql.handlePrettifyQuery.call(graphiql, arguments)
-          },
-          title: "Prettify Query",
-          label: "Prettify"
-        }),
-        React.createElement(GraphiQL.ToolbarButton, {
-          onClick: function () {
-            graphiql.handleToggleHistory.call(graphiql, arguments)
-          },
-          title: "Show History",
-          label: "History"
-        })
-      ].concat(
-        ${safeSerialize(bookmarks)}.map(renderBookmark)
-      )),
-    )
+    var prettifyButton = React.createElement(GraphiQL.ToolbarButton, {
+      onClick: function () {
+        graphiql.handlePrettifyQuery.call(graphiql, arguments)
+      },
+      title: "Prettify Query",
+      label: "Prettify"
+    })
 
-    function renderBookmark (bookmark) {
-      return React.createElement(GraphiQL.ToolbarButton, {
+    var historyButton = React.createElement(GraphiQL.ToolbarButton, {
+      onClick: function () {
+        graphiql.handleToggleHistory.call(graphiql, arguments)
+      },
+      title: "Show History",
+      label: "History"
+    })
+
+    var bookmarkOpts = ${safeSerialize(bookmarks)}
+    var bookmarks = bookmarkOpts.items.map(function (bookmark) {
+      return renderBookmark(bookmark, bookmarkOpts)
+    })
+
+    var bookmarksMenuTitle = bookmarkOpts.title || 'Bookmarks'
+    var bookmarksMenu = bookmarks.length && React.createElement(GraphiQL.Menu, {
+      title: bookmarksMenuTitle,
+      label: bookmarksMenuTitle
+    }, bookmarks)
+
+    var customComponents = []
+    if (logo) customComponents.push(renderLogo(logo))
+
+    var toolbarItems = []
+    if (bookmarksMenu) toolbarItems.push(bookmarksMenu)
+
+    var toolbar = React.createElement(GraphiQL.Toolbar, {}, [
+      prettifyButton,
+      historyButton,
+      bookmarksMenu
+    ])
+
+    customComponents.push(toolbar)
+
+    function renderBookmark (bookmark, opts) {
+      return React.createElement(GraphiQL.MenuItem, {
         title: bookmark.title,
         label: bookmark.title,
-        onClick: function () {
+        onSelect: function () {
           graphiql.getQueryEditor().setValue(bookmark.query)
+          // if (opts.autorun) {
+          //   graphiql.handleRunQuery()
+          // }
         }
       })
     }
